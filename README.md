@@ -1,30 +1,40 @@
-# Node.js Express MySQL CRUD 后端
+# Node.js Express MySQL CRUD + LangChain.js 后端
 
-一个基于Express框架的Node.js MySQL增删改查后端服务。
+一个集成了LangChain.js AI功能的Express框架Node.js后端服务，支持数据库CRUD操作和AI功能。
 
 ## 项目结构
 
 ```
 nodejs/
 ├── config/
-│   └── config.json         # 数据库配置文件
+│   ├── config.json         # 数据库配置文件
+│   └── env.example         # 环境变量配置示例
 ├── database/
 │   └── db.js              # 数据库连接模块
 ├── routes/
-│   └── userRoutes.js      # Express用户路由模块
+│   ├── userRoutes.js      # Express用户路由模块
+│   └── aiRoutes.js        # LangChain.js AI功能路由
 ├── init.sql               # 数据库初始化SQL文件
 ├── index.js               # 主服务器文件
 ├── package.json           # 项目配置
 └── README.md              # 说明文档
 ```
 
-## Express 重构特性
+## 🚀 功能特性
 
+### Express 框架特性
 ✅ **模块化路由** - 使用Express Router将路由逻辑分离到独立模块
 ✅ **中间件支持** - 自动JSON解析、CORS处理、错误处理
 ✅ **简化代码** - 去除原生HTTP模块的复杂性，代码更简洁
 ✅ **更好的错误处理** - 统一的错误处理中间件
 ✅ **RESTful API** - 标准的HTTP状态码和响应格式
+
+### LangChain.js AI 功能
+🤖 **智能对话** - 集成大语言模型的对话功能
+📝 **文本摘要** - 自动生成文本摘要
+🔧 **模块化设计** - AI功能独立路由，易于扩展
+🌐 **多模型支持** - 支持OpenAI、Anthropic、Google等多种LLM
+⚙️ **配置灵活** - 通过环境变量配置API密钥
 
 ## 快速开始
 
@@ -57,7 +67,17 @@ npm install
 mysql -u root -p < init.sql
 ```
 
-### 4. 启动服务器
+### 4. 配置AI功能（可选）
+如果需要使用AI功能，请配置API密钥：
+```bash
+# 复制环境变量示例文件
+cp config/env.example .env
+
+# 编辑.env文件，添加您的API密钥
+# OPENAI_API_KEY=your-actual-api-key-here
+```
+
+### 5. 启动服务器
 ```bash
 # 开发模式（自动重启）
 npm run dev
@@ -66,7 +86,7 @@ npm run dev
 npm start
 ```
 
-### 5. 初始化数据库（推荐）
+### 6. 初始化数据库（推荐）
 服务器启动后，访问以下接口一键创建数据库和表：
 ```bash
 curl -X POST http://localhost:3000/init
@@ -81,27 +101,31 @@ curl -X POST http://localhost:3000/init
 
 ### 接口列表
 
-#### 1. 获取首页信息
+#### 基础接口
+
+**1. 获取首页信息**
 ```
 GET /
 ```
 
-#### 2. 初始化数据库
+**2. 初始化数据库**
 ```
 POST /init
 ```
 
-#### 3. 获取所有用户
+#### 用户管理接口
+
+**3. 获取所有用户**
 ```
 GET /users
 ```
 
-#### 4. 根据ID获取用户
+**4. 根据ID获取用户**
 ```
 GET /users/:id
 ```
 
-#### 5. 创建用户
+**5. 创建用户**
 ```
 POST /users
 Content-Type: application/json
@@ -113,7 +137,7 @@ Content-Type: application/json
 }
 ```
 
-#### 6. 更新用户
+**6. 更新用户**
 ```
 PUT /users/:id
 Content-Type: application/json
@@ -125,9 +149,41 @@ Content-Type: application/json
 }
 ```
 
-#### 7. 删除用户
+**7. 删除用户**
 ```
 DELETE /users/:id
+```
+
+#### AI功能接口 (LangChain.js)
+
+**8. 获取AI功能列表**
+```
+GET /ai
+```
+
+**9. AI对话功能**
+```
+POST /ai/chat
+Content-Type: application/json
+
+{
+  "message": "你好，请介绍一下LangChain"
+}
+```
+
+**10. 文本摘要功能**
+```
+POST /ai/summarize
+Content-Type: application/json
+
+{
+  "text": "这里是要摘要的长文本内容..."
+}
+```
+
+**11. 获取AI配置信息**
+```
+GET /ai/config
 ```
 
 ## 测试示例
