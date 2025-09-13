@@ -1,3 +1,6 @@
+// 加载环境变量
+require('dotenv').config();
+
 const express = require('express');
 const db = require('./database/db');
 const userRoutes = require('./routes/userRoutes');
@@ -8,6 +11,9 @@ const app = express();
 // 中间件配置
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 静态文件服务
+app.use(express.static('public'));
 
 // CORS中间件
 app.use((req, res, next) => {
@@ -39,12 +45,28 @@ app.get('/', (req, res) => {
             ai: {
                 'GET /ai': '获取AI功能列表',
                 'POST /ai/chat': 'AI对话功能',
+                'POST /ai/chat-context': '上下文对话功能',
+                'POST /ai/clear-context': '清空对话历史',
                 'POST /ai/summarize': '文本摘要功能',
                 'GET /ai/config': 'LangChain配置信息'
+            },
+            frontend: {
+                'GET /chat': 'AI对话调试页面',
+                'GET /chat.html': 'AI对话调试页面(备选)'
             }
         },
         note: 'AI功能需要配置相应的API密钥'
     });
+});
+
+// 聊天页面路由
+app.get('/chat', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
+
+// 聊天页面路由(备选)
+app.get('/chat.html', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
 });
 
 // 初始化数据库路由
