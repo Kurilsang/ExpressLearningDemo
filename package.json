@@ -4,8 +4,14 @@
   "description": "简易的Node.js MySQL CRUD后端",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "dev:watch": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "watch": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "clean": "rm -rf dist",
+    "start:js": "node index.js",
+    "dev:js": "nodemon index.js"
   },
   "dependencies": {
     "@langchain/core": "^0.3.75",
@@ -16,5 +22,12 @@
     "mysql2": "^3.6.0",
     "nodemon": "^3.1.10",
     "openai": "^5.20.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.3",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.2"
   }
 }
