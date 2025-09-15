@@ -67,14 +67,28 @@ npm install
 mysql -u root -p < init.sql
 ```
 
-### 4. 配置AI功能（可选）
-如果需要使用AI功能，请配置API密钥：
-```bash
-# 复制环境变量示例文件
-cp config/env.example .env
+### 4. 配置AI功能（必需）
+为了使用AI功能，需要配置环境变量：
 
-# 编辑.env文件，添加您的API密钥
-# OPENAI_API_KEY=your-actual-api-key-here
+**方法1：使用.env文件（推荐）**
+```bash
+# .env文件已经自动创建，包含以下配置：
+# OPENAI_API_KEY=sk-Z6K1lJbIhibBudBKwzAlSrZNsBdGFbkXVseWx8sWdkh9L8O1
+# OPENAI_BASE_URL=https://yunwu.ai
+# OPENAI_MODEL=gpt-4o-mini
+```
+
+**方法2：直接设置环境变量**
+```bash
+# Windows
+set OPENAI_API_KEY=sk-Z6K1lJbIhibBudBKwzAlSrZNsBdGFbkXVseWx8sWdkh9L8O1
+set OPENAI_BASE_URL=https://yunwu.ai
+set OPENAI_MODEL=gpt-4o-mini
+
+# Linux/Mac
+export OPENAI_API_KEY=sk-Z6K1lJbIhibBudBKwzAlSrZNsBdGFbkXVseWx8sWdkh9L8O1
+export OPENAI_BASE_URL=https://yunwu.ai
+export OPENAI_MODEL=gpt-4o-mini
 ```
 
 ### 5. 启动服务器
@@ -190,6 +204,8 @@ GET /ai/config
 
 使用curl测试API：
 
+### 数据库相关测试
+
 ```bash
 # 1. 初始化数据库
 curl -X POST http://localhost:3000/init
@@ -214,6 +230,31 @@ curl -X PUT http://localhost:3000/users/1 \
 curl -X DELETE http://localhost:3000/users/1
 ```
 
+### AI功能测试
+
+```bash
+# 1. 检查AI配置状态
+curl http://localhost:3000/ai/config
+
+# 2. AI对话测试
+curl -X POST http://localhost:3000/ai/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"你好，请介绍一下LangChain.js"}'
+
+# 3. 文本摘要测试（短文本）
+curl -X POST http://localhost:3000/ai/summarize \
+  -H "Content-Type: application/json" \
+  -d '{"text":"LangChain.js是一个用于构建大语言模型应用的JavaScript框架。它提供了丰富的工具和组件，帮助开发者轻松集成各种LLM服务。通过模块化设计，开发者可以快速构建聊天机器人、文本摘要、问答系统等AI应用。"}'
+
+# 4. 文本摘要测试（长文本）
+curl -X POST http://localhost:3000/ai/summarize \
+  -H "Content-Type: application/json" \
+  -d '{"text":"这里可以放一段很长的文本，LangChain.js会自动使用map-reduce方法进行摘要..."}'
+
+# 5. 获取AI功能列表
+curl http://localhost:3000/ai
+```
+
 ## 数据库表结构
 
 ### users 表
@@ -228,12 +269,33 @@ CREATE TABLE users (
 );
 ```
 
+## 环境变量配置
+
+项目使用 `dotenv` 管理环境变量，相关配置文件：
+
+- **`.env`** - 主环境变量文件（已自动创建）
+- **`env.txt`** - 环境变量模板文件
+- **`config/env.example`** - 环境变量示例文件
+
+### 重要环境变量
+
+| 变量名 | 描述 | 默认值 | 是否必需 |
+|--------|------|--------|----------|
+| `OPENAI_API_KEY` | OpenAI API密钥 | - | 是（AI功能） |
+| `OPENAI_BASE_URL` | API基础URL | https://api.openai.com/v1 | 否 |
+| `OPENAI_MODEL` | 使用的模型 | gpt-4o-mini | 否 |
+| `PORT` | 服务器端口 | 3000 | 否 |
+| `NODE_ENV` | 运行环境 | development | 否 |
+
 ## 注意事项
 
-1. 请确保MySQL服务已启动
-2. 根据实际情况修改 `config/config.json` 中的数据库连接信息
-3. 首次运行建议先访问 `POST /init` 接口初始化数据库
-4. 所有API返回的都是JSON格式数据
+1. **MySQL数据库**: 请确保MySQL服务已启动
+2. **数据库配置**: 根据实际情况修改 `config/config.json` 中的数据库连接信息
+3. **数据库初始化**: 首次运行建议先访问 `POST /init` 接口初始化数据库
+4. **AI功能**: 需要有效的API密钥才能使用AI相关功能
+5. **API格式**: 所有API返回的都是JSON格式数据
+6. **云雾AI**: 当前配置使用云雾AI代理服务([yunwu.ai](https://yunwu.ai))
+7. **Node.js版本**: 建议使用Node.js 18+以获得最佳兼容性
 
 ## 错误处理
 
