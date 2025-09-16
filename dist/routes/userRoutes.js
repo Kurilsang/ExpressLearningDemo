@@ -4,11 +4,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const db_1 = __importDefault(require("../database/db"));
+const prisma_1 = __importDefault(require("../database/prisma"));
 const router = express_1.default.Router();
 router.get('/', async (req, res) => {
     try {
-        const users = await db_1.default.query('SELECT * FROM users ORDER BY created_at DESC');
+        const users = await prisma_1.default.user.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
         res.json({
             success: true,
             data: users,
@@ -25,14 +27,13 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const users = await db_1.default.query('SELECT * FROM users WHERE id = ?', [id]);
-        if (users.length === 0) {
+        const user = await prisma_1.default.user.findUnique(parseInt(id));
+        if (!user) {
             return res.status(404).json({
                 success: false,
                 message: '用户不存在'
             });
         }
-        const user = users[0];
         res.json({
             success: true,
             data: user,
@@ -55,20 +56,19 @@ router.post('/', async (req, res) => {
                 message: '姓名和邮箱不能为空'
             });
         }
-        const result = await db_1.default.query('INSERT INTO users (name, email, age) VALUES (?, ?, ?)', [name, email, age || 0]);
+        const user = await prisma_1.default.user.create({
+            name,
+            email,
+            age: age || 0
+        });
         res.status(201).json({
             success: true,
-            data: {
-                id: result.insertId,
-                name,
-                email,
-                age: age || 0
-            },
+            data: user,
             message: '创建用户成功'
         });
     }
     catch (error) {
-        if (error.code === 'ER_DUP_ENTRY') {
+        if (error.code === 'P2002') {
             return res.status(400).json({
                 success: false,
                 message: '邮箱已存在'
@@ -90,37 +90,35 @@ router.put('/:id', async (req, res) => {
                 message: '姓名和邮箱不能为空'
             });
         }
-        const existingUsers = await db_1.default.query('SELECT * FROM users WHERE id = ?', [id]);
-        if (existingUsers.length === 0) {
+        const existingUser = await prisma_1.default.user.findUnique(parseInt(id));
+        if (!existingUser) {
             return res.status(404).json({
                 success: false,
                 message: '用户不存在'
             });
         }
-        const existingUser = existingUsers[0];
-        const result = await db_1.default.query('UPDATE users SET name = ?, email = ?, age = ? WHERE id = ?', [name, email, age, id]);
-        if (result.affectedRows === 0) {
-            return res.status(400).json({
-                success: false,
-                message: '更新失败'
-            });
-        }
+        const updatedUser = await prisma_1.default.user.update(parseInt(id), {
+            name,
+            email,
+            age
+        });
         res.json({
             success: true,
-            data: {
-                id: parseInt(id),
-                name,
-                email,
-                age
-            },
+            data: updatedUser,
             message: '更新用户成功'
         });
     }
     catch (error) {
-        if (error.code === 'ER_DUP_ENTRY') {
+        if (error.code === 'P2002') {
             return res.status(400).json({
                 success: false,
                 message: '邮箱已存在'
+            });
+        }
+        if (error.code === 'P2025') {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
             });
         }
         res.status(500).json({
@@ -132,19 +130,19 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await db_1.default.query('DELETE FROM users WHERE id = ?', [id]);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: '用户不存在或删除失败'
-            });
-        }
+        await prisma_1.default.user.delete(parseInt(id));
         res.json({
             success: true,
             message: '删除用户成功'
         });
     }
     catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在或删除失败'
+            });
+        }
         res.status(500).json({
             success: false,
             message: '删除用户失败: ' + error.message

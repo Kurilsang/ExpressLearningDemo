@@ -4,24 +4,32 @@
   "description": "简易的Node.js MySQL CRUD后端",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run generate && tsc",
     "start": "npm run build && node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "dev:watch": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "watch": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "npm run generate && ts-node src/index.ts",
+    "dev:watch": "npm run generate && ts-node-dev --respawn --transpile-only src/index.ts",
+    "watch": "npm run generate && ts-node-dev --respawn --transpile-only src/index.ts",
     "clean": "rm -rf dist",
     "start:js": "node index.js",
-    "dev:js": "nodemon index.js"
+    "dev:js": "nodemon index.js",
+    "generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:pull": "prisma db pull",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@langchain/core": "^0.3.75",
     "@langchain/openai": "^0.6.11",
+    "@prisma/client": "^6.16.1",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "langchain": "^0.1.25",
     "mysql2": "^3.6.0",
     "nodemon": "^3.1.10",
-    "openai": "^5.20.1"
+    "openai": "^5.20.1",
+    "prisma": "^6.16.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",

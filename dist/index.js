@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const express_1 = __importDefault(require("express"));
 const path_1 = __importDefault(require("path"));
-const db_1 = __importDefault(require("./database/db"));
+const prisma_1 = __importDefault(require("./database/prisma"));
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const aiRoutes_1 = __importDefault(require("./routes/aiRoutes"));
 const app = (0, express_1.default)();
@@ -60,36 +60,48 @@ app.get('/chat.html', (req, res) => {
 });
 app.post('/init', async (req, res) => {
     try {
-        await db_1.default.initDatabase();
+        await prisma_1.default.initDatabase();
+        const connected = await prisma_1.default.isConnected();
         res.json({
             success: true,
             message: '数据库初始化成功',
-            config: db_1.default.getConfig(),
-            connected: db_1.default.isConnected()
+            connected: connected,
+            note: '如果用户表不存在，请运行 "npx prisma db push" 来创建表结构'
+        });
+    }
+    catch (error) {
+        const connected = await prisma_1.default.isConnected();
+        res.status(500).json({
+            success: false,
+            message: '数据库初始化失败: ' + error.message,
+            connected: connected
+        });
+    }
+});
+app.get('/db/status', async (req, res) => {
+    try {
+        const connected = await prisma_1.default.isConnected();
+        res.json({
+            success: true,
+            data: {
+                connected: connected,
+                provider: 'mysql',
+                orm: 'prisma'
+            },
+            message: '数据库状态检查完成'
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: '数据库初始化失败: ' + error.message,
-            connected: db_1.default.isConnected()
+            data: {
+                connected: false,
+                provider: 'mysql',
+                orm: 'prisma'
+            },
+            message: '数据库状态检查失败: ' + error.message
         });
     }
-});
-app.get('/db/status', (req, res) => {
-    res.json({
-        success: true,
-        data: {
-            connected: db_1.default.isConnected(),
-            config: {
-                host: db_1.default.getConfig().host,
-                port: db_1.default.getConfig().port,
-                database: db_1.default.getConfig().database,
-                charset: db_1.default.getConfig().charset
-            }
-        },
-        message: '数据库状态检查完成'
-    });
 });
 app.use('/users', userRoutes_1.default);
 app.use('/ai', aiRoutes_1.default);
@@ -108,12 +120,12 @@ app.use((error, req, res, next) => {
 });
 async function startServer() {
     try {
-        await db_1.default.connect();
+        await prisma_1.default.connect();
         const PORT = parseInt(process.env.PORT || '3000');
         app.listen(PORT, () => {
             console.log(`🚀 TypeScript服务器运行在 http://localhost:${PORT}`);
             console.log('📋 API端点:');
-            console.log('📊 数据库相关:');
+            console.log('📊 数据库相关 (Prisma ORM):');
             console.log('  GET    /              - 首页信息');
             console.log('  POST   /init          - 初始化数据库');
             console.log('  GET    /db/status     - 数据库状态检查');
@@ -131,6 +143,7 @@ async function startServer() {
             console.log('🎯 前端界面:');
             console.log('  GET    /chat          - 对话调试页面');
             console.log('⚠️  注意: AI功能需要配置API密钥');
+            console.log('💡 数据库已使用 Prisma ORM');
         });
     }
     catch (error) {
@@ -140,7 +153,7 @@ async function startServer() {
 }
 process.on('SIGINT', async () => {
     console.log('\n🔄 正在关闭服务器...');
-    await db_1.default.close();
+    await prisma_1.default.disconnect();
     console.log('✅ 服务器已关闭');
     process.exit(0);
 });

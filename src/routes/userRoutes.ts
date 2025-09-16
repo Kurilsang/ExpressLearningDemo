@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
-import { RowDataPacket, OkPacket } from 'mysql2/promise';
-import db from '../database/db';
+import prismaService from '../database/prisma';
 
 const router = express.Router();
 
@@ -36,7 +35,9 @@ interface UpdateUserRequest extends Request {
 // 获取所有用户
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const users = await db.query('SELECT * FROM users ORDER BY created_at DESC') as User[];
+        const users = await prismaService.user.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
         res.json({
             success: true,
             data: users,
@@ -54,16 +55,15 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const users = await db.query('SELECT * FROM users WHERE id = ?', [id]) as User[];
+        const user = await prismaService.user.findUnique(parseInt(id));
         
-        if (users.length === 0) {
+        if (!user) {
             return res.status(404).json({
                 success: false,
                 message: '用户不存在'
             });
         }
         
-        const user: User = users[0];
         res.json({
             success: true,
             data: user,
@@ -89,23 +89,19 @@ router.post('/', async (req: CreateUserRequest, res: Response) => {
             });
         }
 
-        const result = await db.query(
-            'INSERT INTO users (name, email, age) VALUES (?, ?, ?)',
-            [name, email, age || 0]
-        ) as OkPacket;
+        const user = await prismaService.user.create({
+            name,
+            email,
+            age: age || 0
+        });
 
         res.status(201).json({
             success: true,
-            data: { 
-                id: result.insertId, 
-                name, 
-                email, 
-                age: age || 0 
-            },
+            data: user,
             message: '创建用户成功'
         });
     } catch (error: any) {
-        if (error.code === 'ER_DUP_ENTRY') {
+        if (error.code === 'P2002') { // Prisma unique constraint error
             return res.status(400).json({
                 success: false,
                 message: '邮箱已存在'
@@ -132,43 +128,36 @@ router.put('/:id', async (req: UpdateUserRequest, res: Response) => {
         }
         
         // 先检查用户是否存在
-        const existingUsers = await db.query('SELECT * FROM users WHERE id = ?', [id]) as User[];
-        if (existingUsers.length === 0) {
+        const existingUser = await prismaService.user.findUnique(parseInt(id));
+        if (!existingUser) {
             return res.status(404).json({
                 success: false,
                 message: '用户不存在'
             });
         }
-        
-        const existingUser: User = existingUsers[0];
 
-        const result = await db.query(
-            'UPDATE users SET name = ?, email = ?, age = ? WHERE id = ?',
-            [name, email, age, id]
-        ) as OkPacket;
-
-        if (result.affectedRows === 0) {
-            return res.status(400).json({
-                success: false,
-                message: '更新失败'
-            });
-        }
+        const updatedUser = await prismaService.user.update(parseInt(id), {
+            name,
+            email,
+            age
+        });
 
         res.json({
             success: true,
-            data: { 
-                id: parseInt(id), 
-                name, 
-                email, 
-                age 
-            },
+            data: updatedUser,
             message: '更新用户成功'
         });
     } catch (error: any) {
-        if (error.code === 'ER_DUP_ENTRY') {
+        if (error.code === 'P2002') { // Prisma unique constraint error
             return res.status(400).json({
                 success: false,
                 message: '邮箱已存在'
+            });
+        }
+        if (error.code === 'P2025') { // Record not found
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
             });
         }
         res.status(500).json({
@@ -182,20 +171,19 @@ router.put('/:id', async (req: UpdateUserRequest, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const result = await db.query('DELETE FROM users WHERE id = ?', [id]) as OkPacket;
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: '用户不存在或删除失败'
-            });
-        }
+        await prismaService.user.delete(parseInt(id));
 
         res.json({
             success: true,
             message: '删除用户成功'
         });
     } catch (error: any) {
+        if (error.code === 'P2025') { // Record not found
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在或删除失败'
+            });
+        }
         res.status(500).json({
             success: false,
             message: '删除用户失败: ' + error.message
